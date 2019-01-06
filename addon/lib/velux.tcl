@@ -222,7 +222,7 @@ proc ::velux::get_channels_json {} {
 			string channelid;
 			foreach(channelid,device.Channels().EnumUsedIDs()) {
 				var channel = dom.GetObject(channelid);
-				if (((channel.ChnLabel() == 'INPUT_OUTPUT') || (channel.ChnLabel() == 'DIGITAL_OUTPUT') || (channel.ChnLabel() == 'DIGITAL_ANALOG_OUTPUT') || (channel.ChnLabel() == 'SWITCH')) && ((channel.ChnDirection() == 0) || (channel.ChnDirection() == 2))) {
+				if (((channel.ChnLabel() == 'INPUT_OUTPUT') || (channel.ChnLabel() == 'DIGITAL_OUTPUT') || (channel.ChnLabel() == 'DIGITAL_ANALOG_OUTPUT') || (channel.ChnLabel() == 'SWITCH') || (channel.ChnLabel() == 'SWITCH_VIRTUAL_RECEIVER')) && ((channel.ChnDirection() == 0) || (channel.ChnDirection() == 2))) {
 					WriteLine(channel.Name());
 				}
 			}
