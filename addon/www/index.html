@@ -189,12 +189,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			var window_down_channel = $("select[name='window_down_channel']");
 			var shutter_channel = $("select[name='shutter_channel']");
 			var shutter_up_channel = $("select[name='shutter_up_channel']");
+			var shutter_stop_channel = $("select[name='shutter_stop_channel']");
 			var shutter_down_channel = $("select[name='shutter_down_channel']");
 			window_channel.empty();
 			window_up_channel.empty();
 			window_down_channel.empty();
 			shutter_channel.empty();
 			shutter_up_channel.empty();
+			shutter_stop_channel.empty();
 			shutter_down_channel.empty();
 			
 			$("<option/>").val("").text("").appendTo(window_channel);
@@ -212,6 +214,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				$("<option/>").val(channel).text(channel).appendTo(window_up_channel);
 				$("<option/>").val(channel).text(channel).appendTo(window_down_channel);
 				$("<option/>").val(channel).text(channel).appendTo(shutter_up_channel);
+				$("<option/>").val(channel).text(channel).appendTo(shutter_stop_channel);
 				$("<option/>").val(channel).text(channel).appendTo(shutter_down_channel);
 			});
 			
@@ -237,6 +240,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 						window_reed_channel: window.window_reed_channel || '',
 						shutter_channel: window.shutter_channel || '',
 						shutter_up_channel: window.shutter_up_channel || '',
+						shutter_stop_channel: window.shutter_stop_channel || '',
 						shutter_down_channel: window.shutter_down_channel || '',
 						shutter_motion_seconds: window.shutter_motion_seconds || ''
 					});
@@ -366,6 +370,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 						rules: [{
 							type: 'empty',
 							prompt: 'Please select a channel for the shutter up button.'
+						}]
+					},
+					shutter_stop_channel: {
+						optional: true,
+						rules: [{
+							type: 'empty',
+							prompt: 'Please select a channel for the shutter stop button.'
 						}]
 					},
 					shutter_down_channel: {
@@ -505,6 +516,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				<div class="field">
 					<label>Shutter up button channel</label>
 					<select class="ui dropdown" name="shutter_up_channel">
+					</select>
+				</div>
+				<div class="field">
+					<label>Shutter stop button channel</label>
+					<select class="ui dropdown" name="shutter_stop_channel">
 					</select>
 				</div>
 				<div class="field">

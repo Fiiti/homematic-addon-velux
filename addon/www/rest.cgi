@@ -74,6 +74,7 @@ proc process {} {
 						regexp {\"window_reed_channel\"\s*:\s*\"([^\"]+)\"} $data match window_reed_channel
 						regexp {\"shutter_channel\"\s*:\s*\"([^\"]+)\"} $data match shutter_channel
 						regexp {\"shutter_up_channel\"\s*:\s*\"([^\"]+)\"} $data match shutter_up_channel
+						regexp {\"shutter_stop_channel\"\s*:\s*\"([^\"]+)\"} $data match shutter_stop_channel
 						regexp {\"shutter_down_channel\"\s*:\s*\"([^\"]+)\"} $data match shutter_down_channel
 						regexp {\"shutter_motion_seconds\"\s*:\s*\"([^\"]+)\"} $data match shutter_motion_seconds
 						if { ![info exists window_channel ] } { set window_channel "" }
@@ -83,9 +84,10 @@ proc process {} {
 						if { ![info exists window_reed_channel ] } { set window_reed_channel "" }
 						if { ![info exists shutter_channel ] } { set shutter_channel "" }
 						if { ![info exists shutter_up_channel ] } { set shutter_up_channel "" }
+						if { ![info exists shutter_stop_channel ] } { set shutter_stop_channel "" }
 						if { ![info exists shutter_down_channel ] } { set shutter_down_channel "" }
 						if { ![info exists shutter_motion_seconds ] } { set shutter_motion_seconds "" }
-						velux::create_window $id $name $window_channel $window_up_channel $window_down_channel $window_motion_seconds $window_reed_channel $shutter_channel $shutter_up_channel $shutter_down_channel $shutter_motion_seconds
+						velux::create_window $id $name $window_channel $window_up_channel $window_down_channel $window_motion_seconds $window_reed_channel $shutter_channel $shutter_up_channel $shutter_stop_channel $shutter_down_channel $shutter_motion_seconds
 						return "\"Window ${id} successfully created\""
 					} elseif {$env(REQUEST_METHOD) == "DELETE"} {
 						set id [lindex $path 3]

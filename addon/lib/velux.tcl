@@ -27,14 +27,14 @@
 #       protect. diode (optional)   |   |   |   3.3V         |                                  |
 #  24V------+------->|--------------+   |   +----------------|3V          down   stop   up      |
 #           |                           |                    |            (+)    ( )    (+)     |
-#  GND--+---)---------------------------+--------------------|GND          |             |      |
-#       |   |                                                |             |             |      |
-#       |   |                                                +------------ | ----------- | -----+
-#       |   |        +---------------------------+                         |             |
-#       |   +--------|24V                     OC1|-------------------------+             |
-#       +------------|GND                     OC2|---------------------------------------+
-#                    |    HMW-IO-12-Sw14-DR      |
-#                    |                           |
+#  GND--+---)---------------------------+--------------------|GND          |      |      |      |
+#       |   |                                                |             |      |      |      |
+#       |   |                                                +------------ | -----|----- | -----+
+#       |   |        +---------------------------+                         |      |      |
+#       |   +--------|24V                     OC1|-------------------------+      |      |
+#       +------------|GND                     OC2|--------------------------------+      |
+#                    |    HMW-IO-12-Sw14-DR   OC3|---------------------------------------+
+#                    |    HMIP-MOD-OC8...        |
 #
 #
 #
@@ -351,7 +351,7 @@ proc ::velux::update_global_config {log_level short_press_millis long_press_mill
 	release_lock $lock_id_ini_file
 }
 
-proc ::velux::create_window {window_id name {window_channel ""} window_up_channel window_down_channel window_motion_seconds {window_reed_channel ""} {shutter_channel ""} {shutter_up_channel ""} {shutter_down_channel ""} {shutter_motion_seconds 0}} {
+proc ::velux::create_window {window_id name {window_channel ""} window_up_channel window_down_channel window_motion_seconds {window_reed_channel ""} {shutter_channel ""} {shutter_up_channel ""} {shutter_stop_channel ""} {shutter_down_channel ""} {shutter_motion_seconds 0}} {
 	variable ini_file
 	variable lock_id_ini_file
 	acquire_lock $lock_id_ini_file
@@ -366,6 +366,7 @@ proc ::velux::create_window {window_id name {window_channel ""} window_up_channe
 	ini::set $ini "window_${window_id}" "window_pid" "0"
 	ini::set $ini "window_${window_id}" "shutter_channel" $shutter_channel
 	ini::set $ini "window_${window_id}" "shutter_up_channel" $shutter_up_channel
+	ini::set $ini "window_${window_id}" "shutter_stop_channel" $shutter_stop_channel
 	ini::set $ini "window_${window_id}" "shutter_down_channel" $shutter_down_channel
 	ini::set $ini "window_${window_id}" "shutter_motion_seconds" $shutter_motion_seconds
 	ini::set $ini "window_${window_id}" "shutter_level" "0.0"
@@ -459,7 +460,7 @@ proc ::velux::shutter_configured {window_id} {
 proc ::velux::set_window_param {window_id param value} {
 	variable ini_file
 	variable lock_id_ini_file
-	write_log 4 "Setting window ${window_id} parameter ${param} to ${value}"
+	write_log 4 "Setting window_param ${window_id} parameter ${param} to ${value}"
 	acquire_lock $lock_id_ini_file
 	set ini [ini::open $ini_file r+]
 	set found 0
@@ -506,6 +507,7 @@ proc ::velux::set_level_value {window_id obj lvl} {
 	
 }
 
+# build hm commands and send them to CCU
 proc ::velux::set_object_states {states} {
 	variable dryrun
 	upvar $states s
@@ -515,10 +517,15 @@ proc ::velux::set_object_states {states} {
 			error "Object not set"
 		}
 		if {$dryrun} {
-			write_log 3 "Would set object \"$object\" to state: $s($object) (dryrun)"
+			write_log 3 "Would set object \"$object\" to state: $s($object) for 400 milliseconds. (dryrun)"
 		} else {
-			write_log 3 "Setting object \"$object\" to state: $s($object)"
-			append rs "dom.GetObject(\"$object\").State($s($object));"
+			write_log 3 "Setting object_states \"$object\" to state: $s($object) for 400 milliseconds."
+			##append rs "dom.GetObject(\"$object\").State($s($object));"
+
+			append rs "dom.GetObject(ID_CHANNELS).Get(\"$object\").DPByHssDP(\"ON_TIME\").State(0.4);"
+			append rs "dom.GetObject(ID_CHANNELS).Get(\"$object\").DPByHssDP(\"STATE\").State($s($object));"
+			write_log 4 "command => dom.GetObject(ID_CHANNELS).Get(\"$object\").DPByHssDP(\"ON_TIME\").State(0.4);"
+			write_log 4 "command => dom.GetObject(ID_CHANNELS).Get(\"$object\").DPByHssDP(\"STATE\").State($s($object));"
 		}
 	}
 	if {$rs != ""} {
@@ -562,26 +569,44 @@ proc ::velux::send_command {window_id obj cmd} {
 	array set window [get_window $window_id]
 	set up_channel $window(${obj}_up_channel)
 	set down_channel $window(${obj}_down_channel)
+	set stop_channel $window(${obj}_stop_channel)
 	
 	set_window_param $window_id "${obj}_last_command" $cmd
 	
-	set up 1
-	set down 1
-	if {$cmd == "up"} { set down 0 }
-	if {$cmd == "down"} { set up 0 }
+	#set stop 1
+	#set up 1
+	#set down 1
+	
 	acquire_lock $lock_id_transmit
-	set states($up_channel) $up
-	set states($down_channel) $down
+	
+	if {$cmd == "up"} { 
+	set states($up_channel) 1
+	#	set down 0
+	#	set stop 0 
 	set_object_states states
-	if {$cmd == "stop"} {
-		after $long_press_millis
-	} else {
-		after $short_press_millis
 	}
-	set states($up_channel) 0
-	set states($down_channel) 0
+	if {$cmd == "down"} { 
+	set states($down_channel) 1
+	#	set up 0
+	#	set stop 0 
 	set_object_states states
-	after $command_pause_millis
+	}
+	if {$cmd == "stop"} { 
+	set states($stop_channel) 1
+	set_object_states states
+		#set up 0
+		#set down 0 
+	}
+	# if {$cmd == "stop"} {
+	# 	after $long_press_millis
+	# } else {
+	# 	after $short_press_millis
+	# }
+	# set states($up_channel) 0
+	# set states($down_channel) 0
+	# set states($stop_channel) 0
+	# set_object_states states
+	 after $command_pause_millis
 	release_lock $lock_id_transmit
 }
 
